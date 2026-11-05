@@ -1,0 +1,12 @@
+# FoodStory Menu Scraper - Python Dependencies
+
+## Core Libraries
+
+playwright>=1.40.0      # Web scraping automation tool
+openpyxl>=3.1.2         # Excel file manipulation
+pandas>=2.1.0           # Data processing and CSV export
+
+## Optional (for testing)
+
+pytest>=7.4.0            # Testing framework
+unittest                # Built-in Python testing

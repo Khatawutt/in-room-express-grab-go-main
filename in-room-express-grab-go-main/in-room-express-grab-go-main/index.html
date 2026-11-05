@@ -1,0 +1,108 @@
+<!DOCTYPE html>
+<html lang="en" data-theme="classical">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#f3f2f2">
+<meta name="description" content="MANA Ratchayothin — In-Room Dining. Order food to your room.">
+<title>MANA · In-Room Dining</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=Lora:ital,wght@0,400;0,600;1,400&family=Noto+Serif+Thai:wght@400;600&family=Noto+Sans+Thai:wght@400;700&display=swap">
+<link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+<div id="devbar" class="devbar" hidden></div>
+
+<!-- MENU -->
+<div id="menu">
+  <header class="hdr wrap">
+    <div class="hdr-top">
+      <div class="hdr-text">
+        <div class="kicker">MANA Ratchayothin</div>
+        <h1 id="hdr-title" class="hdr-title">In-Room Dining</h1>
+        <div id="hdr-room" class="sub" hidden></div>
+      </div>
+      <div class="langs" data-lang-switch></div>
+    </div>
+    <label class="search">
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+      <input id="q" type="search" autocomplete="off" placeholder="Search menu">
+    </label>
+  </header>
+
+  <section id="picks" class="picks" hidden>
+    <div class="wrap picks-head"><h2 id="picks-title" class="sec-title"></h2><span id="picks-by" class="kicker muted"></span></div>
+    <div class="carousel wrap-bleed">
+      <div id="picks-row" class="picks-row"></div>
+      <button type="button" id="picks-prev" class="arrow round left" aria-label="Previous" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></button>
+      <button type="button" id="picks-next" class="arrow round right" aria-label="Next" hidden><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></button>
+    </div>
+  </section>
+
+  <nav id="cats-bar" class="cats-bar" aria-label="Categories">
+    <div class="carousel wrap-bleed">
+      <div id="cats" class="cats"></div>
+      <button type="button" id="cats-prev" class="arrow fade left" aria-label="Scroll categories left" hidden><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m15 18-6-6 6-6"/></svg></span></button>
+      <button type="button" id="cats-next" class="arrow fade right" aria-label="Scroll categories right" hidden><span><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m9 18 6-6-6-6"/></svg></span></button>
+    </div>
+  </nav>
+
+  <main id="items" class="items wrap" aria-live="polite"></main>
+</div>
+
+<!-- CART BAR -->
+<div id="cartbar" class="cartbar" hidden>
+  <div class="bar-text"><span id="bar-count" class="bar-count"></span><span id="bar-total" class="bar-total num"></span></div>
+  <button type="button" id="bar-go" class="bar-go"></button>
+</div>
+
+<!-- CHECKOUT / RECEIPT -->
+<div id="checkout" class="screen" hidden></div>
+<div id="receipt" class="screen" hidden></div>
+
+<!-- DISH SHEET -->
+<div id="dish" class="overlay" hidden>
+  <div class="backdrop"></div>
+  <div class="sheet" role="dialog" aria-modal="true" aria-labelledby="dish-title">
+    <div id="dish-body" class="sheet-body"></div>
+    <div id="dish-foot" class="sheet-foot"></div>
+  </div>
+</div>
+
+<!-- DEVELOPER: login + crop -->
+<div id="devlogin" class="overlay center" hidden>
+  <div class="backdrop"></div>
+  <form id="dev-form" class="dialog" role="dialog" aria-modal="true" aria-labelledby="dev-title">
+    <div class="dialog-head"><h2 id="dev-title" class="dialog-title">Developer Access</h2><div id="dev-hint" class="sub small"></div></div>
+    <label class="field boxed"><span class="lbl">Username</span><input id="dev-u" autocomplete="username"></label>
+    <label class="field boxed"><span class="lbl">Password</span><input id="dev-p" type="password" autocomplete="current-password"></label>
+    <p id="dev-err" class="err-text" hidden></p>
+    <div class="dialog-actions"><button type="button" id="dev-cancel" class="btn outline grow"></button><button type="submit" id="dev-submit" class="btn primary grow"></button></div>
+  </form>
+</div>
+
+<div id="crop" class="overlay center" hidden>
+  <div class="backdrop dark"></div>
+  <div class="dialog" role="dialog" aria-modal="true" aria-labelledby="crop-title">
+    <div class="dialog-head row-between"><h2 id="crop-title" class="dialog-title"></h2><span id="crop-id" class="mono small"></span></div>
+    <div id="crop-hint" class="sub small center"></div>
+    <div class="crop-frame"><canvas id="crop-canvas" width="256" height="256"></canvas></div>
+    <input id="crop-zoom" type="range" min="1" max="3" step="0.02" value="1" aria-label="Zoom">
+    <div class="dialog-actions"><button type="button" id="crop-cancel" class="btn outline grow"></button><button type="button" id="crop-save" class="btn primary grow"></button></div>
+  </div>
+</div>
+<input id="img-file" type="file" accept="image/*" class="sr-only" tabindex="-1" aria-hidden="true">
+
+<div id="toast" class="toast" role="status" hidden></div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js" defer></script>
+<script src="js/config.js"></script>
+<script src="js/i18n.js"></script>
+<script src="js/promptpay.js"></script>
+<script src="data/menu-data.js"></script>
+<script src="js/menu.js"></script>
+<script src="js/app.js"></script>
+</body>
+</html>

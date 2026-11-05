@@ -1,0 +1,59 @@
+name: Scrape FoodStory Menu from Modal
+
+on:
+  # รันอัตโนมัติทุกวันจันทร์เวลา 08:00 น. (UTC+7)
+  schedule:
+    - cron: '0 3 * * 1'  # วันจันทร์ เวลา 03:00 UTC (= 10:00 น. ตามไทย)
+  # หรือสามารถรันด้วยมือได้
+  workflow_dispatch:
+
+jobs:
+  scrape-menu:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+      
+      - name: Set up Python 3.10
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.10'
+      
+      - name: Install dependencies
+        run: |
+          pip install --upgrade pip
+          pip install playwright
+          pip install openpyxl
+          pip install pandas
+          
+          # ติดตั้ง Playwright browsers
+          playwright install chromium
+      
+      - name: Cache Playwright binaries
+        uses: actions/cache@v3
+        with:
+          path: |
+            ~/.cache/ms-playwright/
+          key: ${{ hashFiles('playwright.config.py') }}
+      
+      - name: Install Playwright browsers (if not cached)
+        run: |
+          playwright install chromium
+      
+      - name: Run FoodStory Menu Scraper
+        env:
+          FOODSTORY_USERNAME: ${{ secrets.FOODSTORY_USERNAME }}
+          FOODSTORY_PASSWORD: ${{ secrets.FOODSTORY_PASSWORD }}
+        run: |
+          cd scripts
+          python scrape_foodstory_modal.py
+      
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v3
+        with:
+          name: foodstory-menu-export
+          path: |
+            data/*.xlsx
+            data/*.csv
+            data/*.json
