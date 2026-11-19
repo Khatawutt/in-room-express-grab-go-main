@@ -257,7 +257,7 @@
           <div class="stepper" role="group"><button type="button" data-action="line-dec" data-id="${esc(id)}" aria-label="−">${ICON.minus}</button>
           <span>${c.qty}</span><button type="button" data-action="line-inc" data-id="${esc(id)}" aria-label="+">${ICON.plus}</button></div></div></div>`).join('');
     const payOpts = [['qr', T.qr, T.qrSub], ['alipay', T.ali, T.aliSub], ['store', T.store, T.storeSub]].map(([k, label, sub]) => `
-      <button type="button" class="pay-opt ${S.pay === k ? 'on' : ''}" role="radio" aria-checked="${S.pay === k}" data-action="pay" data-v="${k}"${k === 'alipay' ? ' disabled aria-disabled="true"' : ''}>
+      <button type="button" class="pay-opt ${S.pay === k ? 'on' : ''}" role="radio" aria-checked="${S.pay === k}" data-action="pay" data-v="${k}">
         <span class="radio"><span></span></span><span class="pay-text"><span class="pay-label">${esc(label)}</span><span class="sub">${esc(sub)}</span></span></button>`).join('');
     let payPanel = '';
     if (S.pay === 'qr') payPanel = `
@@ -270,7 +270,7 @@
           ${S.slip ? `<img src="${esc(S.slip.url)}" alt="" class="slip-thumb"><span class="slip-name"><span>${esc(S.slip.name)}</span><span class="link">${esc(T.change)}</span></span><span class="ok">${ICON.check}</span>`
                    : `${ICON.upload}<span>${esc(T.tapUpload)}</span>`}
           <input type="file" id="slip-input" accept="image/*" class="sr-only"></label></div>`;
-    else if (S.pay === 'alipay') payPanel = `<div class="panel center"><div class="qr-band ali">ALIPAY</div><p class="err-text">${esc(T.aliNA)}</p></div>`;
+    else if (S.pay === 'alipay') payPanel = `<div class="panel center"><div class="qr-band ali">ALIPAY</div><p>${esc(T.storeMsg)}</p><div>${esc(T.amount)}: <span class="price big num">${fixed(tot)}</span> THB</div></div>`;
     else payPanel = `<div class="panel center"><p>${esc(T.storeMsg)}</p><div>${esc(T.amount)}: <span class="price big num">${fixed(tot)}</span> THB</div></div>`;
 
     box.innerHTML = `
@@ -280,7 +280,7 @@
         <section><div class="kicker">${esc(T.deliverTo)}</div>
           <div class="panel">
             <div class="room-row"><label class="field grow"><span class="lbl">${esc(T.roomL)}</span>
-              <input id="room" class="room-input" value="${esc(S.room)}" placeholder="${esc(T.roomPh)}" autocomplete="off" maxlength="40" required></label>
+              <input id="room" class="room-input" value="${esc(S.room)}" autocomplete="off" maxlength="40" required></label>
               ${qrRoom && S.room === qrRoom ? `<span class="from-qr">${ICON.check}${esc(T.fromQr)}</span>` : ''}</div>
             <label class="field"><span class="lbl">${esc(T.guest)}</span>
               <input id="guest" value="${esc(S.name)}" placeholder="${esc(T.guestPh)}" autocomplete="name" maxlength="60"></label>
@@ -323,7 +323,7 @@
     if (box.hidden) return;
     const T = t(), d = receiptData();
     const labels = T.steps.slice();
-    if (S.rc.pay === 'store') labels[1] = T.stepStore;
+    if (S.rc.pay !== 'qr') labels[1] = T.stepStore;
     // Only "received" is confirmed by the system; later steps are shown as upcoming.
     const steps = labels.map((label, k) => `<li class="${k === 0 ? 'done' : ''}"><span class="dot"></span><span class="step-label">${esc(label)}</span>
       <span class="sub num">${k === 0 ? esc(S.rc.time.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' })) : ''}</span></li>`).join('');
@@ -480,7 +480,6 @@
     const T = t();
     if (S.sending) return;
     if (!S.room.trim()) { S.err = T.needRoom; renderCheckout(); $('#room').focus(); return; }
-    if (S.pay === 'alipay') { S.err = T.needAli; renderCheckout(); return; }
     if (S.pay === 'qr' && !S.slip) { S.err = T.needSlip; renderCheckout(); return; }
 
     const m = byId(), EN = I18N.en;
@@ -500,7 +499,7 @@
     S.sending = true; S.err = ''; renderCheckout();
     let result;
     try {
-      if (S.pay !== 'store') payload.slip = { data: await compressImage(S.slip.file), mime: 'image/jpeg' };
+      if (S.pay === 'qr') payload.slip = { data: await compressImage(S.slip.file), mime: 'image/jpeg' };
       const res = await fetch(C.appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
       const text = await res.text();
       try { result = JSON.parse(text); } catch (e) { result = { status: 'error', message: 'Unexpected response from the order system' }; }
