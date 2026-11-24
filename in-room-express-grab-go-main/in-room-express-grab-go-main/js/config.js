@@ -14,8 +14,8 @@ window.CONFIG = {
   // Payment labels written to the order sheet (same values as the previous site)
   payBackend: {
     qr: 'Thai QR (slip pending check)',
-    alipay: 'Alipay (EDC at room)',
-    store: 'EDC at room (Credit card / Cash)'
+    alipay: 'QR CODE (pay at room)',
+    store: 'QR CODE (pay at room)'
   },
 
   // How often to refresh cloud menu photos (ms)
