@@ -51,12 +51,41 @@
     lang: initialLang, cat: 'ALL', q: '',
     cart: store.get('sessionStorage', CART_KEY, {}),
     dish: null, dq: 1, dnotes: [], dtext: '',
-    screen: 'menu', room: qrRoom, name: '', pay: 'qr', slip: null, err: '', sending: false, pendingOrderId: null,
+    screen: 'menu', room: qrRoom, name: '', phone: '', pay: 'qr', slip: null, err: '', sending: false, pendingOrderId: null,
     rc: null,
     remote: {}, staged: store.get('localStorage', STAGED_KEY, {}), failed: {},
     dev: store.get('sessionStorage', DEV_FLAG, false) === true, devLogin: false,
-    saving: false, saveDone: 0, saveTotal: 0, crop: null, cz: 1
+    saving: false, saveDone: 0, saveTotal: 0, crop: null, cz: 1,
+    hoursOpen: false
   };
+
+  function bangkokMinutes() {
+    const parts = new Intl.DateTimeFormat('en-GB', {
+      timeZone: C.orderHours.timeZone,
+      hour: '2-digit', minute: '2-digit', hourCycle: 'h23'
+    }).formatToParts(new Date());
+    const values = {};
+    parts.forEach(p => { if (p.type === 'hour' || p.type === 'minute') values[p.type] = Number(p.value); });
+    return values.hour * 60 + values.minute;
+  }
+  function parseTimeMinutes(value) {
+    const [h, m] = String(value).split(':').map(Number);
+    return h * 60 + m;
+  }
+  function isOrderHoursOpen() {
+    const now = bangkokMinutes();
+    const open = parseTimeMinutes(C.orderHours.open);
+    const close = parseTimeMinutes(C.orderHours.close);
+    return now >= open && now < close;
+  }
+  function syncOrderHours() {
+    const open = isOrderHoursOpen();
+    const changed = S.hoursOpen !== open;
+    S.hoursOpen = open;
+    if (!open && S.screen === 'checkout') go('menu', 'replace');
+    if (!open && S.dish) S.dish = null;
+    if (changed) render();
+  }
   const layout = ['grid', 'list', 'editorial'].includes(params.get('layout')) ? params.get('layout') : 'grid';
   const theme = ['classical', 'original'].includes(params.get('theme')) ? params.get('theme') : 'classical';
   document.documentElement.dataset.theme = theme;
@@ -149,6 +178,7 @@
 
   function itemQty(i) { const c = S.cart[i.id]; return c ? c.qty : 0; }
   function addBadge(i, cls) {
+    if (!S.hoursOpen) return '';
     const q = itemQty(i);
     return `<span class="add ${cls} ${q ? 'on' : ''}" aria-hidden="true">${q ? '×' + q : '+'}</span>`;
   }
@@ -199,7 +229,7 @@
 
   function renderBar() {
     const n = count(), bar = $('#cartbar');
-    bar.hidden = !(S.screen === 'menu' && n > 0);
+    bar.hidden = !(S.screen === 'menu' && n > 0 && S.hoursOpen);
     if (bar.hidden) return;
     $('#bar-count').textContent = t().item(n);
     $('#bar-total').textContent = baht(total());
@@ -225,10 +255,11 @@
       <div class="dish-notes"><div class="kicker">${esc(T.notes)}</div>
         <div class="chips">${T.quick.map((q, k) => `<button type="button" class="chip ${S.dnotes.includes(k) ? 'on' : ''}" aria-pressed="${S.dnotes.includes(k)}" data-action="dish-note" data-k="${k}">${esc(q)}</button>`).join('')}</div>
         <textarea id="dish-text" rows="2" maxlength="200" placeholder="${esc(T.notesPh)}" aria-label="${esc(T.notes)}">${esc(S.dtext)}</textarea></div>`;
-    $('#dish-foot').innerHTML = `
+    $('#dish-foot').innerHTML = S.hoursOpen ? `
       <div class="stepper big" role="group"><button type="button" data-action="dish-dec" aria-label="−">${ICON.minus}</button>
         <span aria-live="polite">${S.dq}</span><button type="button" data-action="dish-inc" aria-label="+">${ICON.plus}</button></div>
-      <button type="button" class="btn primary grow" data-action="dish-commit"><span>${esc(cta)}</span>${S.dq ? `<span class="num">· ${baht(i.price * S.dq)}</span>` : ''}</button>`;
+      <button type="button" class="btn primary grow" data-action="dish-commit"><span>${esc(cta)}</span>${S.dq ? `<span class="num">· ${baht(i.price * S.dq)}</span>` : ''}</button>`
+      : `<button type="button" class="btn outline grow" data-action="dish-close">${esc(t().closedTitle)}</button>`;
   }
 
   // ---------- render: checkout ----------
@@ -284,6 +315,8 @@
               ${qrRoom && S.room === qrRoom ? `<span class="from-qr">${ICON.check}${esc(T.fromQr)}</span>` : ''}</div>
             <label class="field"><span class="lbl">${esc(T.guest)}</span>
               <input id="guest" value="${esc(S.name)}" placeholder="${esc(T.guestPh)}" autocomplete="name" maxlength="60"></label>
+            <label class="field"><span class="lbl">${esc(T.phone)}</span>
+              <input id="phone" value="${esc(S.phone)}" placeholder="${esc(T.phonePh)}" autocomplete="tel" maxlength="20" required></label>
           </div></section>
         <section><div class="sec-head"><span class="kicker">${esc(T.orderItems)}</span><span class="sub">${esc(T.item(count()))}</span></div>
           ${lines}
@@ -308,7 +341,7 @@
   function receiptData() {
     const r = S.rc, T = t();
     return {
-      orderId: r.orderId, room: r.room, name: r.name,
+      orderId: r.orderId, room: r.room, name: r.name, phone: r.phone,
       timeStr: r.time.toLocaleString('en-GB', { dateStyle: 'medium', timeStyle: 'short' }),
       items: r.items.map(i => ({ label: names(i.item).title + ' ×' + i.qty, amount: fixed(i.price * i.qty) })),
       total: fixed(r.total), totalLabel: r.pay === 'store' ? T.dueLabel : T.totalLabel,
@@ -338,6 +371,7 @@
         <div class="kv"><span>${esc(T.orderNo)}</span><span class="num">${esc(d.orderId)}</span></div>
         <div class="kv"><span>${esc(T.date)}</span><span>${esc(d.timeStr)}</span></div>
         <div class="kv"><span>${esc(T.roomL)}</span><span>${esc(d.room)}</span></div>
+        ${d.phone ? `<div class="kv"><span>${esc(T.phone)}</span><span>${esc(d.phone)}</span></div>` : ''}
         ${d.name ? `<div class="kv"><span>${esc(T.guestR)}</span><span>${esc(d.name)}</span></div>` : ''}
         <div class="rc-items">${d.items.map(i => `<div class="kv"><span>${esc(i.label)}</span><span class="num">${i.amount}</span></div>`).join('')}</div>
         <div class="kv strong"><span>${esc(d.totalLabel)}</span><span class="num">${d.total} THB</span></div>
@@ -386,7 +420,13 @@
   }
 
   function render() {
+    syncOrderHours();
     renderHeader();
+    const hours = $('#hours-status');
+    if (hours) {
+      hours.hidden = S.hoursOpen;
+      if (!S.hoursOpen) hours.textContent = t().closedTitle + ' · ' + t().closedSub;
+    }
     const onMenu = S.screen === 'menu';
     $('#menu').hidden = !onMenu;
     if (onMenu) { renderPicks(); renderCats(); renderItems(); }
@@ -430,13 +470,14 @@
   }
   window.addEventListener('popstate', () => {
     const h = location.hash.slice(1);
-    const target = h === 'checkout' && count() ? 'checkout' : h === 'receipt' && S.rc ? 'receipt' : 'menu';
+    const target = h === 'checkout' && count() && isOrderHoursOpen() ? 'checkout' : h === 'receipt' && S.rc ? 'receipt' : 'menu';
     S.dish = null;
     go(target);
   });
 
   // ---------- cart ----------
   function setQty(id, q) {
+    if (!isOrderHoursOpen()) { syncOrderHours(); return; }
     if (q <= 0) delete S.cart[id];
     else S.cart[id] = { ...(S.cart[id] || { notes: [], text: '' }), qty: q };
     S.pendingOrderId = null;
@@ -445,12 +486,14 @@
     else render();
   }
   function openDish(id) {
+    if (!isOrderHoursOpen()) { syncOrderHours(); return; }
     const c = S.cart[id];
     S.dish = id; S.dq = c ? c.qty : 1; S.dnotes = c ? c.notes.slice() : []; S.dtext = c ? c.text : '';
     render();
     setTimeout(() => { const b = $('#dish .dish-close'); if (b) b.focus({ preventScroll: true }); }, 30);
   }
   function commitDish() {
+    if (!isOrderHoursOpen()) { syncOrderHours(); toast(t().closedTitle); return; }
     if (S.dq <= 0) delete S.cart[S.dish];
     else S.cart[S.dish] = { qty: S.dq, notes: S.dnotes.slice(), text: S.dtext.trim() };
     S.dish = null; S.pendingOrderId = null;
@@ -478,8 +521,10 @@
   // ---------- order ----------
   async function placeOrder() {
     const T = t();
+    if (!isOrderHoursOpen()) { syncOrderHours(); S.err = T.closedTitle + ' · ' + T.closedSub; renderCheckout(); return; }
     if (S.sending) return;
     if (!S.room.trim()) { S.err = T.needRoom; renderCheckout(); $('#room').focus(); return; }
+    if (!S.phone.trim()) { S.err = T.needPhone; renderCheckout(); $('#phone').focus(); return; }
     if (S.pay === 'qr' && !S.slip) { S.err = T.needSlip; renderCheckout(); return; }
 
     const m = byId(), EN = I18N.en;
@@ -492,6 +537,7 @@
     const orderId = S.pendingOrderId || (S.pendingOrderId = newOrderId());
     const payload = {
       room: name ? `${room} (${name})` : room,
+      phone: S.phone.trim(),
       menu: items.map(i => `${i.name} (x${i.qty})` + (i.note ? ` [${i.note}]` : '')).join(', '),
       price: tot, orderId, payment: C.payBackend[S.pay]
     };
@@ -499,6 +545,7 @@
     S.sending = true; S.err = ''; renderCheckout();
     let result;
     try {
+      if (!isOrderHoursOpen()) { syncOrderHours(); S.sending = false; S.err = T.closedTitle + ' · ' + T.closedSub; renderCheckout(); return; }
       if (S.pay === 'qr') payload.slip = { data: await compressImage(S.slip.file), mime: 'image/jpeg' };
       const res = await fetch(C.appsScriptUrl, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
       const text = await res.text();
@@ -514,7 +561,7 @@
       return;
     }
     if (S.slip) URL.revokeObjectURL(S.slip.url);
-    S.rc = { orderId, room, name, items, total: tot, time: new Date(), pay: S.pay };
+    S.rc = { orderId, room, name, phone: S.phone.trim(), items, total: tot, time: new Date(), pay: S.pay };
     S.cart = {}; S.slip = null; S.pendingOrderId = null; S.err = '';
     saveCart();
     go('receipt', 'replace');
@@ -529,6 +576,7 @@
   function saveReceiptImage() {
     const d = receiptData(), T = t(), W = 720, P = 48, LH = 34;
     const rows = [[T.orderNo, d.orderId], [T.date, d.timeStr], [T.roomL, d.room]];
+    if (d.phone) rows.push([T.phone, d.phone]);
     if (d.name) rows.push([T.guestR, d.name]);
     const H = P * 2 + 120 + (rows.length + d.items.length + 2) * LH + 40 + 3 * LH;
     const c = document.createElement('canvas'), g = c.getContext('2d');
@@ -652,6 +700,7 @@
       case 'dish-note': { const k = +b.dataset.k; S.dnotes = S.dnotes.includes(k) ? S.dnotes.filter(x => x !== k) : [...S.dnotes, k]; renderDish(); break; }
       case 'dish-commit': commitDish(); break;
       case 'go-checkout':
+        if (!isOrderHoursOpen()) { syncOrderHours(); toast(T.closedTitle); break; }
         if (!count()) { toast(T.selectOne); break; }
         S.err = ''; go('checkout', 'push'); break;
       case 'go-menu': if (history.state && history.state.screen === 'checkout') history.back(); else go('menu', 'replace'); break;
@@ -686,6 +735,7 @@
     if (el.id === 'q') { S.q = el.value; renderPicks(); renderItems(); }
     else if (el.id === 'room') { S.room = el.value; if (S.err) { S.err = ''; const p = $('#checkout .err-text'); if (p) p.hidden = true; } }
     else if (el.id === 'guest') S.name = el.value;
+    else if (el.id === 'phone') S.phone = el.value;
     else if (el.id === 'dish-text') S.dtext = el.value;
     else if (el.id === 'crop-zoom') { S.cz = Number(el.value); drawCrop(); }
   });
@@ -744,10 +794,18 @@
   // ---------- boot ----------
   wireCarousel($('#cats'), '#cats-prev', '#cats-next', el => Math.max(160, el.clientWidth * 0.7));
   wireCarousel($('#picks-row'), '#picks-prev', '#picks-next', el => 162 * Math.max(1, Math.floor(el.clientWidth / 162) - 1));
-  $('#bar-go').addEventListener('click', () => { if (count()) { S.err = ''; go('checkout', 'push'); } });
+  $('#bar-go').addEventListener('click', () => {
+    if (!isOrderHoursOpen()) { syncOrderHours(); toast(t().closedTitle); return; }
+    if (count()) { S.err = ''; go('checkout', 'push'); }
+  });
 
   if (location.hash) history.replaceState(null, '', location.pathname + location.search);
+  syncOrderHours();
   render();
+  setInterval(syncOrderHours, 1000);
+  document.addEventListener('visibilitychange', () => {
+    if (document.visibilityState === 'visible') syncOrderHours();
+  });
 
   Menu.loadMenu().then(({ items, source }) => {
     S.menu = items; S.menuState = 'ok';
@@ -776,3 +834,4 @@
   setInterval(refreshPhotos, C.photoPollMs);
   document.addEventListener('visibilitychange', () => { if (document.visibilityState === 'visible') refreshPhotos(); });
 })();
+

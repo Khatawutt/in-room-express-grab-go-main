@@ -1,9 +1,17 @@
 {
   "version": 2,
   "builds": [
-    { "src": "index.html", "use": "@vercel/static" }
+    { "src": "index.html", "use": "@vercel/static" },
+    { "src": "css/**", "use": "@vercel/static" },
+    { "src": "js/**", "use": "@vercel/static" },
+    { "src": "images/**", "use": "@vercel/static" },
+    { "src": "data/**", "use": "@vercel/static" }
   ],
   "routes": [
+    { "src": "/css/(.*)", "headers": { "Cache-Control": "public, max-age=31536000, immutable" }, "status": 200 },
+    { "src": "/js/(.*)", "headers": { "Cache-Control": "public, max-age=31536000, immutable" }, "status": 200 },
+    { "src": "/images/(.*)", "headers": { "Cache-Control": "public, max-age=31536000, immutable" }, "status": 200 },
+    { "src": "/data/(.*)", "headers": { "Cache-Control": "public, max-age=86400" }, "status": 200 },
     { "src": "/(.*)", "dest": "/index.html", "status": 200 }
   ],
   "headers": [

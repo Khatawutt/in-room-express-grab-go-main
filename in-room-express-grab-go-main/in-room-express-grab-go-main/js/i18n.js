@@ -2,6 +2,8 @@
 window.I18N = {
   en: {
     title: 'In-Room Dining', room: 'Room', viaQr: 'from your in-room QR', search: 'Search menu', all: 'All',
+    closedTitle: 'Online ordering is closed', closedSub: 'Orders reopen at 11:00 Thailand time.',
+    nextOpen: 'Ordering opens at 11:00.',
     picks: "Chef's picks", byChef: 'Recommended', review: 'Review & pay',
     notes: 'Notes for the kitchen', notesPh: 'Allergies or anything else we should know',
     add: 'Add to order', update: 'Update order', remove: 'Remove from order',
@@ -42,6 +44,8 @@ window.I18N = {
   },
   th: {
     title: 'อาหารส่งถึงห้อง', room: 'ห้อง', viaQr: 'จาก QR ในห้องพัก', search: 'ค้นหาเมนู', all: 'ทั้งหมด',
+    closedTitle: 'ปิดรับออร์เดอร์ชั่วคราว', closedSub: 'เปิดรับออร์เดอร์อีกครั้งเวลา 11:00 ตามเวลาประเทศไทย',
+    nextOpen: 'เปิดรับออร์เดอร์เวลา 11:00',
     picks: 'เมนูแนะนำ', byChef: 'จากเชฟ', review: 'ตรวจสอบและชำระ',
     notes: 'หมายเหตุถึงครัว', notesPh: 'แพ้อาหาร หรือสิ่งที่อยากให้เราทราบ',
     add: 'เพิ่มลงรายการ', update: 'อัปเดตรายการ', remove: 'ลบออกจากรายการ',
@@ -81,6 +85,8 @@ window.I18N = {
   },
   zh: {
     title: '客房送餐', room: '房间', viaQr: '来自客房二维码', search: '搜索菜单', all: '全部',
+    closedTitle: '网上订餐已关闭', closedSub: '泰国时间 11:00 重新开放订餐。',
+    nextOpen: '将在泰国时间 11:00 重新开放订餐。',
     picks: '主厨推荐', byChef: '推荐', review: '查看并付款',
     notes: '给厨房的备注', notesPh: '过敏或其他需要我们知道的',
     add: '加入订单', update: '更新订单', remove: '从订单移除',
